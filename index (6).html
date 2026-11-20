@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Misi RBT: Pengembaraan Bengkel Ceria</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;font-family:"Baloo 2","Comic Sans MS","Chalkboard SE",system-ui,sans-serif;color:#4a2c7a;background:linear-gradient(135deg,#e6d9ff,#cdeeff 50%,#ffd9ec)}
+#stage{touch-action:none;position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;background:rgba(255,246,255,.95);text-align:center;overflow:auto;z-index:10;font-size:clamp(14px,2.6vw,20px)}
+.scr.on{display:flex}
+#pop{background:rgba(120,90,190,.55)}#ps{z-index:15}
+h1,h2{margin:0;line-height:1.1}
+h1{font-size:clamp(26px,6vw,52px);color:#7b4fd6;text-shadow:0 4px 0 #ffd1e8;animation:bob 2s ease-in-out infinite}
+h2{font-size:clamp(20px,4vw,34px);color:#e0559b}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-1deg)}}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes pop{0%{transform:scale(.5)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
+.btn,.opt{font:inherit;font-weight:800;border:4px solid #fff;border-radius:999px;padding:10px 26px;color:#fff;background:linear-gradient(#ff8fc4,#ee5aa0);box-shadow:0 6px 0 #c23f80;cursor:pointer;font-size:clamp(16px,3vw,24px);touch-action:manipulation}
+.btn:active,.opt:active{transform:translateY(4px);box-shadow:0 2px 0 #c23f80}
+.btn.b{background:linear-gradient(#8fd3ff,#4aa8f0);box-shadow:0 6px 0 #2f7fc2}.btn.g{background:linear-gradient(#8de8b0,#34c47a);box-shadow:0 6px 0 #1f9157}
+.card{background:#fff;border:4px solid #e3d4ff;border-radius:24px;padding:12px 16px;box-shadow:0 8px 0 #d6c4fa;max-width:min(94vw,720px)}
+input{font:inherit;font-size:clamp(16px,3vw,22px);padding:8px 16px;border-radius:999px;border:4px solid #cbb6ff;text-align:center;color:#4a2c7a;width:min(80vw,300px);user-select:text;-webkit-user-select:text}
+.chs{display:flex;gap:14px;justify-content:center}
+.ch{background:#fff;border:5px solid #e3d4ff;border-radius:22px;padding:6px 14px;cursor:pointer;font-weight:800}
+.ch.sel{border-color:#ee5aa0;background:#fff0f8;transform:scale(1.07)}
+#hud{position:fixed;top:6px;left:6px;right:6px;display:none;gap:6px;justify-content:center;flex-wrap:wrap;z-index:6;pointer-events:none}
+#hud.on{display:flex}
+.pl{background:#fff;border:3px solid #ffd93d;border-radius:999px;padding:1px 12px;font-weight:800;font-size:clamp(13px,2.4vw,20px);box-shadow:0 3px 0 #ee5aa0}
+#hud button{pointer-events:auto;font-size:clamp(16px,3vw,22px);border-radius:50%;border:3px solid #fff;background:#b78cff;color:#fff;width:38px;height:38px;cursor:pointer;box-shadow:0 3px 0 #7b4fd6}
+#dp{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));display:none;grid-template-columns:repeat(3,clamp(52px,14vmin,76px));grid-template-rows:repeat(3,clamp(52px,14vmin,76px));gap:4px;z-index:6;opacity:.88}
+#dp.on{display:grid}
+#dp button{border:4px solid #fff;border-radius:20px;background:#8a63e0;color:#fff;font-size:26px;touch-action:none;box-shadow:0 5px 0 #5b3aa8}
+#dp button:active{background:#ee5aa0;transform:translateY(3px)}
+@media (hover:hover) and (pointer:fine){#dp{display:none!important}}
+#land{position:fixed;bottom:0;left:0;right:0;background:#ffd93d;text-align:center;font-weight:800;padding:6px;z-index:30;display:none}
+.pp{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;max-height:96vh}
+#qc{animation:bob 1.6s ease-in-out infinite}
+#qo{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.opt{text-align:left;border-radius:18px;padding:8px 16px;font-size:clamp(14px,2.6vw,20px);background:linear-gradient(#b99bff,#8a63e0);box-shadow:0 5px 0 #5b3aa8}
+.opt.ok{background:#34c47a;box-shadow:0 5px 0 #1f9157}.opt.bad{background:#bbb;box-shadow:0 5px 0 #888;animation:shake .4s}.opt:disabled{cursor:default}
+#qf{font-weight:800;min-height:1.4em}#qf.ok{color:#1f9157;animation:pop .5s}#qf.bad{color:#d6336c}
+table{border-collapse:collapse;width:100%}td,th{padding:4px 8px;border-bottom:2px dashed #e3d4ff}th{color:#e0559b}
+.tr{font-size:60px;animation:pop .8s}
+</style>
+</head>
+<body>
+<noscript><style>#menu .btn:not(a){display:none}</style><div style="position:fixed;top:0;left:0;right:0;z-index:31;padding:10px;background:#fff;text-align:center">Pratonton ini menyekat JavaScript. Buka fail HTML dalam pelayar yang menyokong JavaScript untuk bermain.</div></noscript>
+<div id="stage"><canvas id="cv"></canvas></div>
+<canvas id="fx"></canvas>
+<div id="hud"><span class="pl" id="hs"></span><span class="pl" id="hl"></span><span class="pl" id="hp"></span><span class="pl" id="ht">00:00</span><button id="bm" aria-label="Bunyi">🔊</button><button id="bp" aria-label="Jeda">⏸</button></div>
+<div id="dp"><button data-k="u" style="grid-area:1/2">▲</button><button data-k="l" style="grid-area:2/1">◀</button><button data-k="r" style="grid-area:2/3">▶</button><button data-k="d" style="grid-area:3/2">▼</button></div>
+<div id="land">📱 Putar telefon kamu ke mod landskap untuk bermain dengan lebih selesa!</div>
+
+<div class="scr on" id="menu">
+  <div style="font-size:48px">🛠️🌈🔧</div>
+  <h1>MISI RBT:<br>PENGEMBARAAN BENGKEL CERIA</h1>
+  <p style="margin:0">Kenali simbol keselamatan di bengkel! Tahun 4 · RBT</p>
+  <button class="btn" type="button" id="bStart">MULA PENGEMBARAAN</button>
+  <div><button class="btn b" id="bLB">🏆 Leaderboard</button> <button class="btn g" id="bHelp">❓ Arahan</button></div>
+</div>
+
+<div class="scr" id="setup">
+  <h2>Siapa nama kamu?</h2>
+  <input id="nm" maxlength="12" placeholder="Nama ringkas atau kod murid" autocomplete="off">
+  <h2>Pilih watak kamu</h2>
+  <div class="chs">
+    <div class="ch sel" id="c1"><canvas id="p1" width="100" height="120"></canvas><div>Murid Lelaki</div></div>
+    <div class="ch" id="c2"><canvas id="p2" width="100" height="120"></canvas><div>Murid Perempuan</div></div>
+  </div>
+  <div><button class="btn b" id="bBack1">⬅ Kembali</button> <button class="btn" id="bNext">Seterusnya ➜</button></div>
+</div>
+
+<div class="scr" id="help">
+  <h2>📖 Arahan Permainan</h2>
+  <div class="card" style="text-align:left">
+    <b>🎯 Misi:</b> Berjalan di bengkel, cari 7 simbol keselamatan dan jawab soalan di setiap simbol. Ada 3 level!<br>
+    <b>💻 Komputer:</b> Tekan anak panah atau W A S D.<br>
+    <b>📱 Telefon/Tablet:</b> Guna butang arah di skrin.<br>
+    <b>🚧 Awas:</b> Jangan langgar meja, kerusi dan almari!<br>
+    <b>⭐ Markah:</b> Level 1 = 10, Level 2 = 20, Level 3 = 30 markah setiap simbol (maksimum 420).<br>
+    <b>💡 Jawapan salah?</b> Jangan risau, cuba lagi. Tiada markah ditolak!
+  </div>
+  <button class="btn" id="bGo">MULAKAN LEVEL 1</button>
+</div>
+
+<div class="scr" id="lb">
+  <h2>🏆 Leaderboard Top 10</h2>
+  <div class="card" style="overflow:auto;max-height:68vh"><table id="lbt"></table></div>
+  <button class="btn b" id="bLBback">⬅ Kembali</button>
+</div>
+
+<div class="scr" id="pop">
+  <div class="card pp">
+    <div><canvas id="qc" width="120" height="120"></canvas><div id="qn" style="font-weight:800;color:#e0559b"></div></div>
+    <div style="flex:1;min-width:min(70vw,300px);max-width:460px;text-align:left">
+      <div id="qq" style="font-weight:800;margin-bottom:8px"></div>
+      <div id="qo"></div>
+      <div id="qf"></div>
+      <button class="btn g" id="qnext" style="display:none;margin-top:6px">TERUSKAN ➜</button>
+    </div>
+  </div>
+</div>
+
+<div class="scr" id="trans"><div class="tr" id="tI">🎉</div><h1 id="tT" style="font-size:clamp(24px,5vw,44px)"></h1><div class="card" id="tS"></div><button class="btn" id="tB"></button></div>
+
+<div class="scr" id="ps"><h2>⏸ Permainan dijeda</h2><button class="btn g" id="pR">▶ Sambung</button><button class="btn b" id="pM">🏠 Menu Utama</button></div>
+
+<div class="scr" id="win">
+  <svg class="tr" width="90" height="90" viewBox="0 0 100 100"><path d="M28 12h44v24c0 16-10 28-22 28S28 52 28 36z" fill="#ffd93d" stroke="#f5a300" stroke-width="4"/><path d="M28 18H12c0 18 6 26 18 28M72 18h16c0 18-6 26-18 28" fill="none" stroke="#f5a300" stroke-width="5"/><rect x="44" y="62" width="12" height="14" fill="#f5a300"/><rect x="30" y="76" width="40" height="12" rx="5" fill="#ee5aa0"/><circle cx="42" cy="34" r="3" fill="#4a2c7a"/><circle cx="58" cy="34" r="3" fill="#4a2c7a"/><path d="M43 43q7 7 14 0" fill="none" stroke="#4a2c7a" stroke-width="3" stroke-linecap="round"/></svg>
+  <h1 style="font-size:clamp(20px,4.4vw,40px)">TAHNIAH! ANDA TELAH MENJADI<br>WIRA KESELAMATAN RBT!</h1>
+  <div class="card" id="wS"></div>
+  <form id="reportForm" method="post" target="bengkel-receipt" action="https://bengkel-ceria-rbt.rationalbox16.chatgpt.site/keputusan">
+    <input type="hidden" id="reportResult" name="result">
+    <button class="btn" type="submit">HANTAR KEPUTUSAN KEPADA CIKGU</button>
+  </form>
+  <div><button class="btn b" id="wL">LIHAT LEADERBOARD</button> <button class="btn g" id="wR">MAIN SEMULA</button> <button class="btn" id="wM">MENU UTAMA</button></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),cv=$('cv'),cx=cv.getContext('2d'),fx=$('fx'),fc=fx.getContext('2d'),qc=$('qc').getContext('2d');
+const TS=32,W=640,H=384,COL=['#ff8fc4','#8fd3ff','#b99bff','#8de8b0','#ffe27a','#ffb86b'];
+let S=1,DPR=1,st='menu',T=0,CH='l',cur=0,obs=[],opts=[],K={u:0,d:0,l:0,r:0},prevSt='play',backTo='menu',helpFrom='menu',pc=[];
+const P={x:0,y:0,f:1,m:0},G={lv:0,t:0,score:0,done:[[],[],[]]};
+const SYM=['Tempat Berkumpul','Tanda Keluar','Lantai Licin','Alat Pemadam Api','Bahan Mudah Terbakar','Jagalah Kebersihan','Kawasan Larangan Merokok'];
+const AFF=['Hebat! Jawapan kamu tepat!','Tahniah! Kamu memang bijak!','Syabas! Teruskan usaha!','Bagus sekali! Kamu seorang wira keselamatan!','Cemerlang! Teruskan pengembaraan!'];
+const LV=[
+{t:'PENGENALAN SIMBOL KESELAMATAN',o:'Kenali nama dan maksud simbol keselamatan.',p:10,st:[9.5,6.5],
+ ob:[[5,4,3,2,'t'],[12,7,3,2,'t'],[15,2,3,1,'c']],sy:[[2.5,4],[9.5,3.5],[17.5,5],[2.5,9],[9,10],[6.5,8.5],[13.5,5]]},
+{t:'MISI KESELAMATAN BENGKEL',o:'Fahami fungsi simbol dan tindakan yang selamat.',p:20,st:[1.5,10.5],
+ ob:[[3,4,3,2,'t'],[8,3,3,2,'t'],[13,5,3,2,'t'],[3,8,3,2,'t'],[9,8,3,2,'t'],[15,2,4,1,'c'],[1,2,2,1,'c'],[7,6,1,1,'h'],[12,3,1,1,'h'],[16,8,1,1,'h']],
+ sy:[[1.5,6.5],[7,2.5],[12.5,2.5],[17.5,5],[7.5,7.5],[17.5,10],[13.5,10.5]]},
+{t:'WIRA KESELAMATAN RBT',o:'Gunakan ilmu keselamatan dalam situasi sebenar.',p:30,st:[11.5,10.5],
+ ob:[[3,4,3,2,'t'],[8,3,3,2,'t'],[13,4,3,2,'t'],[5,8,3,2,'t'],[10,7,3,2,'t'],[15,8,3,2,'t'],[1,2,2,1,'c'],[14,2,5,1,'c'],[1,8,2,3,'c'],[18,5,1,3,'c'],[6,4,1,1,'h'],[11,3,1,1,'h'],[8,6,1,1,'h'],[13,7,1,1,'h'],[4,10,1,1,'h'],[14,10,1,1,'h']],
+ sy:[[1.5,6.5],[6.5,2.5],[12.5,6.5],[17.5,10.5],[6.5,10.5],[9.5,6.5],[17.5,3.5]]}];
+// [soalan, betul, salah1, salah2, petunjuk]
+const Q=[[['Apakah maksud simbol tempat berkumpul?','Kawasan untuk berkumpul apabila berlaku kecemasan','Tempat untuk makan bersama','Tempat menyimpan alatan','Perhatikan anak panah yang menuju ke arah orang di tengah.'],['Apakah maksud tanda keluar?','Laluan keluar semasa kecemasan','Tempat berehat','Tempat membeli makanan','Orang di dalam simbol sedang berlari menuju ke pintu.'],['Apakah maksud simbol lantai licin?','Berhati-hati kerana lantai mungkin licin','Kawasan untuk bermain','Tempat menyimpan peralatan','Lihat orang yang hampir terjatuh pada simbol itu.'],['Apakah fungsi alat pemadam api?','Memadamkan api yang kecil','Memanaskan makanan','Menyalakan api','Alat berwarna merah ini digunakan semasa kebakaran.'],['Apakah maksud simbol bahan mudah terbakar?','Bahan ini mudah menyala dan terbakar','Bahan ini tahan api','Bahan ini boleh dimakan','Lihat gambar api pada simbol itu.'],['Apakah maksud simbol Jagalah Kebersihan?','Sentiasa menjaga kebersihan dan membuang sampah ke dalam tong','Membuang sampah merata-rata','Membiarkan bengkel bersepah','Lihat orang membuang sampah ke dalam tong.'],['Apakah maksud simbol kawasan larangan merokok?','Dilarang merokok di kawasan ini','Tempat khas untuk merokok','Tempat menjual rokok','Tanda merah yang bersilang bermaksud dilarang.']],[['Penggera kecemasan berbunyi. Ke manakah kamu perlu pergi selepas keluar dari bengkel?','Ke tempat berkumpul','Pulang ke rumah tanpa memberitahu guru','Kembali ke dalam bengkel','Guru akan mengira bilangan murid di tempat ini.'],['Mengapakah laluan ke tanda keluar tidak boleh dihalang?','Supaya semua orang boleh keluar dengan cepat semasa kecemasan','Supaya bengkel kelihatan kosong','Supaya pintu tidak berdebu','Fikirkan apa yang berlaku apabila ada kebakaran.'],['Kamu ternampak air tumpah di lantai bengkel. Apakah tindakan paling selamat?','Beritahu guru dan jauhi kawasan itu','Berlari melaluinya','Biarkan sahaja','Lantai licin boleh menyebabkan orang terjatuh.'],['Di manakah tempat terbaik untuk menyimpan alat pemadam api?','Di tempat yang mudah dilihat dan dicapai','Di dalam almari berkunci','Di bawah timbunan kotak','Alat ini perlu digunakan dengan cepat semasa kecemasan.'],['Kamu ternampak simbol bahan mudah terbakar pada sebuah bekas. Apakah tindakan yang paling selamat?','Jauhkan daripada sumber haba dan api','Letakkan berhampiran api','Buka bekas tanpa kebenaran','Bahan mudah terbakar mesti jauh daripada api.'],['Selepas aktiviti RBT selesai, apakah yang patut kamu lakukan?','Mengemas bengkel dan membuang sisa ke dalam tong sampah','Meninggalkan sisa di atas meja','Menyorokkan sampah di bawah meja','Bengkel yang bersih lebih selamat.'],['Mengapakah merokok dilarang di dalam bengkel?','Kerana api dan asap boleh menyebabkan kebakaran dan membahayakan kesihatan','Kerana asap rokok membuat bengkel wangi','Kerana rokok membuat alatan berkilat','Ingat, bahan mudah terbakar mungkin ada di bengkel.']],[['Semasa latihan kebakaran, kamu sudah tiba di tempat berkumpul. Apakah yang patut kamu lakukan?','Menunggu dengan tenang dan hadir untuk dikira oleh guru','Berlari kembali ke bengkel untuk mengambil beg','Pergi ke kantin tanpa memberitahu guru','Guru perlu memastikan semua murid selamat.'],['Penggera kecemasan berbunyi. Apakah tindakan yang betul?','Berjalan dengan tenang ke tanda keluar mengikut arahan guru','Berlari ke arah bertentangan','Bersembunyi di bawah meja','Kekal tenang dan ikut arahan guru.'],['Lantai licin selepas dibersihkan dan ramai murid mahu lalu. Apakah cara terbaik?','Letakkan tanda amaran dan lalu perlahan-lahan di tempat kering','Berlari supaya cepat sampai','Tutup tanda amaran','Beri amaran kepada orang lain.'],['Api kecil muncul di atas bangku kerja. Apakah langkah paling selamat?','Maklumkan guru dan gunakan alat pemadam api jika selamat','Menyiram minyak ke atas api','Lari tanpa memberitahu sesiapa','Beritahu orang dewasa dan gunakan alat yang betul.'],['Kamu mahu menyalakan pemetik api berhampiran cecair bertanda mudah terbakar. Apakah tindakan betul?','Hentikan dan jauhkan sumber api','Teruskan kerana hanya sedikit','Tuangkan cecair itu ke atas api','Api dan bahan mudah terbakar tidak boleh berdekatan.'],['Kamu ternampak serpihan kayu dan sisa cat bersepah di laluan. Apakah tindakan paling bijak?','Maklumkan guru dan kemaskan di tempat yang betul dengan selamat','Biarkan kerana bukan kamu yang menyepahkannya','Tendang sisa itu ke bawah meja','Bengkel yang bersih mengelakkan orang tersandung.'],['Kamu nampak seseorang mahu merokok berhampiran bahan mudah terbakar. Apakah tindakan paling bijak?','Ingatkan dengan sopan tentang tanda larangan dan maklumkan kepada guru','Menyertainya kerana ingin mencuba','Berpura-pura tidak nampak','Rokok dan bahan mudah terbakar sangat berbahaya.']]];
+
+/* ---------- utiliti ---------- */
+const rr=(c,x,y,w,h,f,r=4)=>{c.fillStyle=f;c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):c.rect(x,y,w,h);c.fill()};
+const ci=(c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.arc(x,y,r,0,7);c.fill()};
+const fmt=s=>{s=Math.floor(s);return String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function resize(){DPR=devicePixelRatio||1;S=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*S+'px';cv.style.height=H*S+'px';cv.width=W*S*DPR;cv.height=H*S*DPR;cx.setTransform(S*DPR,0,0,S*DPR,0,0);fx.width=innerWidth*DPR;fx.height=innerHeight*DPR;$('land').style.display=innerHeight>innerWidth?'block':'none'}
+addEventListener('resize',resize);
+
+/* ---------- simbol keselamatan (vektor) ---------- */
+function sym(c,id,x,y,s){c.save();c.translate(x,y);c.scale(s/100,s/100);c.lineJoin=c.lineCap='round';
+ const P_=(p,f,sk,lw=4)=>{c.beginPath();p.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();if(f){c.fillStyle=f;c.fill()}if(sk){c.strokeStyle=sk;c.lineWidth=lw;c.stroke()}};
+ const L=(a,b,d,e,col,w)=>{c.beginPath();c.moveTo(a,b);c.lineTo(d,e);c.strokeStyle=col;c.lineWidth=w;c.stroke()};
+ const dia=()=>P_([[0,-48],[48,0],[0,48],[-48,0]],'#fff','#e11d48',9);
+ const ln=(a,b,d,e,col,w)=>L(a,b,d,e,col,w),RED='#e11d48',GRN='#16a34a';
+ if(id==0){rr(c,-48,-48,96,96,GRN,12);c.strokeStyle='#fff';c.lineWidth=3;c.strokeRect(-42,-42,84,84);ci(c,-8,-26,6,'#fff');ci(c,8,-26,6,'#fff');rr(c,-14,-18,12,20,'#fff',5);rr(c,2,-18,12,20,'#fff',5);
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(a=>{ln(a[0]*30,a[1]*6+8,a[0]*18,a[1]*0+8,'#fff',4);P_([[a[0]*14,8],[a[0]*22,2],[a[0]*22,14]],'#fff')});
+  c.fillStyle='#fff';c.font='bold 11px sans-serif';c.textAlign='center';c.fillText('TEMPAT',0,28);c.fillText('BERKUMPUL',0,40)}
+ else if(id==1){rr(c,-48,-48,96,96,GRN,12);c.strokeStyle='#fff';c.lineWidth=3;c.strokeRect(-42,-42,84,84);c.lineWidth=6;c.strokeRect(14,-30,20,56);ci(c,-12,-24,7,'#fff');ln(-12,-14,-4,6,'#fff',7);ln(-4,6,-18,26,'#fff',7);ln(-4,6,10,20,'#fff',7);ln(-9,-8,-26,-2,'#fff',6);ln(-9,-8,8,-14,'#fff',6);ln(0,34,28,34,'#fff',5);P_([[26,28],[36,34],[26,40]],'#fff')}
+ else if(id==2){P_([[0,-46],[50,40],[-50,40]],'#facc15','#111',7);ci(c,-9,-4,6,'#111');ln(-7,2,5,17,'#111',6);ln(5,17,22,30,'#111',6);ln(5,17,-8,31,'#111',6);ln(-3,8,-20,0,'#111',5);ln(-3,8,16,6,'#111',5);c.fillStyle='#111';c.beginPath();c.ellipse(8,34,22,5,0,0,7);c.fill()}
+ else if(id==3){rr(c,-48,-48,96,96,RED,14);rr(c,-42,-42,84,84,'#fff',10);rr(c,-13,-14,26,44,RED,8);rr(c,-6,-26,12,14,RED,3);ln(-6,-28,-18,-28,RED,6);ln(6,-22,24,-22,RED,5);ln(24,-22,22,12,RED,5);ci(c,0,-2,5,'#fff')}
+ else if(id==4){P_([[0,-48],[48,0],[0,48],[-48,0]],'#facc15','#111',7);c.beginPath();c.moveTo(0,-30);c.bezierCurveTo(20,-12,24,6,14,17);c.bezierCurveTo(8,28,-10,28,-15,17);c.bezierCurveTo(-21,6,-12,-6,-4,-13);c.bezierCurveTo(-2,-2,2,0,4,-4);c.bezierCurveTo(6,-12,2,-22,0,-30);c.fillStyle='#111';c.fill();ci(c,0,16,6,'#facc15')}
+ else if(id==5){rr(c,-48,-48,96,96,'#111',12);rr(c,-44,-44,88,88,'#fff',9);rr(c,-4,-6,20,26,'#111',3);rr(c,-7,-12,26,5,'#111',2);ci(c,-20,-18,5,'#111');ln(-20,-12,-18,8,'#111',6);ln(-18,8,-26,24,'#111',5);ln(-18,8,-10,24,'#111',5);ln(-18,-6,-2,-12,'#111',5);c.beginPath();c.arc(0,0,34,0,7);c.strokeStyle=RED;c.lineWidth=7;c.stroke();ln(-24,-24,24,24,RED,7)}
+ else{ci(c,0,0,48,'#fff');rr(c,-30,4,50,9,'#111',3);rr(c,10,4,10,9,'#f59e0b',2);rr(c,20,4,8,9,'#fff',2);c.strokeStyle='#999';c.lineWidth=3;c.beginPath();c.moveTo(-14,-2);c.quadraticCurveTo(-8,-12,-14,-20);c.quadraticCurveTo(-20,-28,-12,-34);c.stroke();c.beginPath();c.arc(0,0,42,0,7);c.strokeStyle=RED;c.lineWidth=8;c.stroke();ln(-30,-30,30,30,RED,8)}
+ c.restore()}
+
+/* ---------- watak chibi ---------- */
+function chr(c,x,y,ty,t,mv,f){const w=mv?Math.sin(t*14):0,b=mv?Math.abs(Math.sin(t*14))*2.5:Math.sin(t*3)*.8,sk='#ffd9b3',g=ty=='p';
+ c.fillStyle='rgba(0,0,0,.15)';c.beginPath();c.ellipse(x,y,13,4,0,0,7);c.fill();
+ rr(c,x-7+w*3,y-8,6,8,sk,2);rr(c,x+1-w*3,y-8,6,8,sk,2);rr(c,x-8+w*3,y-3,8,4,'#fff',2);rr(c,x+0-w*3,y-3,8,4,'#fff',2);
+ rr(c,x-9,y-25-b,18,18,g?'#74c0fc':'#fff',6);if(g)rr(c,x-10,y-14-b,20,9,'#4c9be8',4);else rr(c,x-9,y-12-b,18,6,'#4c6ef5',3);
+ ci(c,x-11,y-16-b+w*2,3.5,sk);ci(c,x+11,y-16-b-w*2,3.5,sk);
+ if(g){ci(c,x,y-34-b,14,'#fff');rr(c,x-11,y-28-b,22,9,'#fff',5);ci(c,x,y-33-b,9.5,sk);c.strokeStyle='#f1d4f7';c.lineWidth=1.5;c.beginPath();c.arc(x,y-34-b,13.3,0,7);c.stroke()}
+ else{ci(c,x,y-33-b,11,sk);c.fillStyle='#2b2b3a';c.beginPath();c.arc(x,y-35-b,11.5,Math.PI,0);c.fill();rr(c,x-11,y-36-b,22,4,'#2b2b3a',2)}
+ const e=f*1.5;ci(c,x-4+e,y-32-b,2,'#222');ci(c,x+4+e,y-32-b,2,'#222');ci(c,x-3.4+e,y-32.8-b,.8,'#fff');ci(c,x+4.6+e,y-32.8-b,.8,'#fff');
+ ci(c,x-7,y-29-b,2.2,'rgba(255,120,170,.6)');ci(c,x+7,y-29-b,2.2,'rgba(255,120,170,.6)');
+ c.strokeStyle='#a33';c.lineWidth=1.2;c.beginPath();c.arc(x+e*.5,y-29-b,2.6,.2,Math.PI-.2);c.stroke()}
+
+/* ---------- dunia bengkel ---------- */
+function drawOb(o,t){const x=o[0]*TS,y=o[1]*TS,w=o[2]*TS,h=o[3]*TS,k=o[4];
+ if(k=='t'){rr(cx,x+4,y+8,w,h,'rgba(0,0,0,.1)',8);rr(cx,x,y+8,w,h-8,'#c98f4a',6);rr(cx,x,y,w,h-10,'#f6c883',8);
+  rr(cx,x+8,y+9,16,5,'#74c0fc',2);rr(cx,x+w-26,y+12,6,16,'#ff6b6b',2);ci(cx,x+w/2,y+(h-10)/2,5,'#8de8b0');rr(cx,x+4,y+h,5,4,'#a8743a',1);rr(cx,x+w-9,y+h,5,4,'#a8743a',1)}
+ else if(k=='h'){ci(cx,x+16,y+26,12,'rgba(0,0,0,.12)');rr(cx,x+9,y+14,3,13,'#a8743a',1);rr(cx,x+20,y+14,3,13,'#a8743a',1);ci(cx,x+16,y+12,12,'#ff8fc4');ci(cx,x+16,y+10,9,'#ffb3d9')}
+ else{rr(cx,x+3,y+2,w,h,'rgba(0,0,0,.1)',6);rr(cx,x,y-16,w,h+16,'#b99bff',6);for(let i=0;i<w/TS;i++){rr(cx,x+i*TS+3,y+4,TS-6,h-4,'#d6c4ff',4);ci(cx,x+i*TS+TS-8,y+h/2+2,2.5,'#ffd93d');ci(cx,x+i*TS+10,y-8,4,COL[(i+o[0])%6]);ci(cx,x+i*TS+22,y-8,4,COL[(i+3)%6])}}}
+function world(t){const L=LV[G.lv];cx.clearRect(0,0,W,H);
+ for(let y=2;y<12;y++)for(let x=1;x<19;x++){cx.fillStyle=(x+y)%2?'#e6fbef':'#fff6dc';cx.fillRect(x*TS,y*TS,TS,TS)}
+ cx.fillStyle='#d8c8ff';cx.fillRect(0,0,W,64);cx.fillRect(0,64,32,320);cx.fillRect(608,64,32,320);cx.fillRect(0,368,W,16);cx.fillStyle='#b9a2f5';cx.fillRect(0,56,W,8);
+ [40,150].forEach(x=>{rr(cx,x,8,70,40,'#bde6ff',6);cx.fillStyle='#fff';cx.fillRect(x+33,8,4,40);cx.fillRect(x,26,70,4);ci(cx,x+18+Math.sin(t+x)*5,18,7,'#fff')});
+ rr(cx,260,8,110,46,'#c98f4a',6);rr(cx,265,12,100,38,'#ffd9a0',4);[['#ff8fc4',272],['#8fd3ff',302],['#8de8b0',332]].forEach(a=>rr(cx,a[1],17,24,28,a[0],3));
+ ci(cx,410,30,19,'#fff');ci(cx,410,30,16,'#ffe9a8');cx.strokeStyle='#4a2c7a';cx.lineWidth=2.5;cx.beginPath();cx.moveTo(410,30);cx.lineTo(410+Math.sin(t)*11,30-Math.cos(t)*11);cx.moveTo(410,30);cx.lineTo(416,30);cx.stroke();
+ for(let i=0;i<20;i++){cx.fillStyle=COL[i%6];cx.beginPath();cx.moveTo(i*32+6,56);cx.lineTo(i*32+26,56);cx.lineTo(i*32+16,70+Math.sin(t*3+i)*3);cx.fill()}
+ rr(cx,552,6,48,58,'#7ed6a4',6);cx.fillStyle='#fff';cx.font='bold 11px sans-serif';cx.textAlign='center';cx.fillText('KELUAR',576,30);cx.fillText('➜',576,48);
+ rr(cx,0,300,30,66,'#ffb86b',6);ci(cx,22,335,2.5,'#fff');
+ [[0,2.2],[1,6.4]].forEach(a=>{});
+ const it=[];obs.forEach(o=>it.push([(o[1]+o[3])*TS,()=>drawOb(o,t)]));
+ L.sy.forEach((s,i)=>it.push([s[1]*TS+18,()=>{const sx=s[0]*TS,sy=s[1]*TS,d=G.done[G.lv][i],z=1+Math.sin(t*4+i)*.05;
+  cx.fillStyle='rgba(0,0,0,.15)';cx.beginPath();cx.ellipse(sx,sy+20,13,4,0,0,7);cx.fill();cx.fillStyle='#8a63e0';cx.fillRect(sx-1.5,sy+8,3,13);
+  if(!d){ci(cx,sx,sy-2,23+Math.sin(t*5+i)*2,'rgba(255,230,120,.45)')}sym(cx,i,sx,sy-2,36*z);
+  if(d){ci(cx,sx+14,sy-16,9,'#22c55e');cx.strokeStyle='#fff';cx.lineWidth=2.6;cx.beginPath();cx.moveTo(sx+9,sy-16);cx.lineTo(sx+13,sy-12);cx.lineTo(sx+19,sy-21);cx.stroke()}}]));
+ it.push([P.y,()=>chr(cx,P.x,P.y,CH,t,P.m,P.f)]);
+ it.sort((a,b)=>a[0]-b[0]).forEach(a=>a[1]());
+ [[20,300],[610,200]].forEach((p,i)=>0)}
+
+/* ---------- pergerakan & perlanggaran ---------- */
+const hit=(x,y)=>{if(x<40||x>600||y<68||y>364)return 1;for(const o of obs)if(x+8>o[0]*TS&&x-8<(o[0]+o[2])*TS&&y+4>o[1]*TS&&y-4<(o[1]+o[3])*TS)return 1;return 0};
+function step(a,b){if(!hit(P.x+a,P.y+b)){P.x+=a;P.y+=b}}
+function move(dt){let dx=K.r-K.l,dy=K.d-K.u;P.m=!!(dx||dy);if(!P.m)return;const n=Math.hypot(dx,dy);dx/=n;dy/=n;if(dx)P.f=dx>0?1:-1;const v=115*dt;step(dx*v,0);step(0,dy*v)}
+function checkSym(){const L=LV[G.lv];for(let i=0;i<7;i++){if(G.done[G.lv][i])continue;const s=L.sy[i];if(Math.hypot(P.x-s[0]*TS,P.y-8-s[1]*TS)<27){K={u:0,d:0,l:0,r:0};openQ(i);return}}}
+
+/* ---------- bunyi ---------- */
+let AC,MG,mute=false,mi=0,mt;
+function au(){if(AC){AC.state=='suspended'&&AC.resume();return}try{AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=mute?0:.6;MG.connect(AC.destination);mt=setInterval(music,320)}catch(e){}}
+function nt(f,d=.2,dl=0,ty='sine',v=.25){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+dl;o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(MG);o.start(t);o.stop(t+d+.05)}
+const fr=s=>261.63*2**(s/12);
+function music(){if(!AC||st=='pause')return;const win=st=='win',pat=win?[0,4,7,12,16,12,7,4]:[0,4,7,12,9,7,4,2],s=pat[mi%8];nt(fr(s+(win?12:0)),.3,0,win?'triangle':'sine',win?.12:.07);if(mi%4==0)nt(fr(-12+(mi%8?7:0)),.5,0,'sine',.08);mi++}
+const sfx={ok:()=>[0,4,7,12].forEach((s,i)=>nt(fr(s+12),.25,i*.09,'triangle')),bad:()=>[-5,-9].forEach((s,i)=>nt(fr(s),.35,i*.16,'sine',.18)),lv:()=>[0,4,7,4,7,12,16].forEach((s,i)=>nt(fr(s+12),.3,i*.12,'triangle')),win:()=>[0,4,7,12,7,12,16,19,24].forEach((s,i)=>nt(fr(s+12),.4,i*.14,'triangle'))};
+$('bm').onclick=()=>{au();mute=!mute;if(MG)MG.gain.value=mute?0:.6;$('bm').textContent=mute?'🔇':'🔊'};
+
+/* ---------- confetti ---------- */
+function conf(n,x,y){for(let i=0;i<n;i++)pc.push({x:x??Math.random()*innerWidth,y:y??-10,vx:(Math.random()-.5)*(y!=null?10:4),vy:Math.random()*3+(y!=null?-7:1),c:COL[i%6],r:Math.random()*8+5,a:Math.random()*6,l:220,s:i%4==0})}
+function fxDraw(){fc.setTransform(DPR,0,0,DPR,0,0);fc.clearRect(0,0,innerWidth,innerHeight);pc.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.a+=.15;p.l--;fc.save();fc.translate(p.x,p.y);fc.rotate(p.a);fc.fillStyle=p.c;if(p.s){fc.font=p.r*2+'px sans-serif';fc.fillText('★',-p.r,p.r)}else fc.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);fc.restore()});pc=pc.filter(p=>p.l>0&&p.y<innerHeight+30)}
+
+/* ---------- skrin & permainan ---------- */
+const scr=id=>{document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));if(id)$(id).classList.add('on');$('hud').classList.toggle('on',id=='pop'||!id);$('dp').classList.toggle('on',!id)};
+const ov=(id,on)=>{$(id).classList.toggle('on',on);$('dp').classList.toggle('on',!on&&st=='play')};
+function sessionId() {
+ const bytes = crypto.getRandomValues(new Uint8Array(16));
+ bytes[6] = (bytes[6] & 15) | 64;
+ bytes[8] = (bytes[8] & 63) | 128;
+ const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+ return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');
+}
+function newGame(){Object.assign(G,{name:$('nm').value.trim()||'Murid',ch:CH,lv:0,t:0,score:0,done:[[],[],[]],saved:0, reportId:sessionId(), firstTry:0, wrongAttempts:0, triedCurrent:false})}
+function hud(){$('hs').textContent='⭐ '+G.score;$('hl').textContent='Level '+(G.lv+1)+'/3';$('hp').textContent='✅ '+G.done[G.lv].filter(Boolean).length+'/7';$('ht').textContent='⏱ '+fmt(G.t)}
+function trans(ic,t,s,b,cb){st='trans';$('tI').textContent=ic;$('tT').textContent=t;$('tS').innerHTML=s;$('tB').textContent=b;$('tB').onclick=()=>{au();cb()};scr('trans');$('hud').classList.remove('on')}
+function loadLevel(i){G.lv=i;const L=LV[i];obs=L.ob;P.x=L.st[0]*TS;P.y=L.st[1]*TS;K={u:0,d:0,l:0,r:0};st='play';scr(null);hud()}
+function begin(){newGame();trans('🛠️','LEVEL 1','<b>'+LV[0].t+'</b><br>'+LV[0].o+'<br>Setiap jawapan betul = 10 markah.','MULA!',()=>loadLevel(0))}
+function openQ(i){st='quiz';cur=i;G.triedCurrent=false;const q=Q[G.lv][i];opts=shuf([[q[1],1],[q[2],0],[q[3],0]]);
+ qc.clearRect(0,0,120,120);sym(qc,i,60,60,108);$('qn').textContent=SYM[i];$('qq').textContent=q[0];$('qf').textContent='';$('qf').className='';$('qnext').style.display='none';
+ const b=$('qo');b.innerHTML='';opts.forEach((o,k)=>{const e=document.createElement('button');e.className='opt';e.textContent='ABC'[k]+'. '+o[0];e.onclick=()=>ans(e,o[1]);b.appendChild(e)});
+ $('dp').classList.remove('on');$('pop').classList.add('on')}
+function ans(e,ok){if(G.done[G.lv][cur])return;au();
+ if(ok){if(!G.triedCurrent)G.firstTry++;G.done[G.lv][cur]=true;G.score+=LV[G.lv].p;e.classList.add('ok');document.querySelectorAll('#qo .opt').forEach(x=>x.disabled=true);
+  $('qf').className='ok';$('qf').textContent='✅ '+AFF[Math.random()*5|0]+'  +'+LV[G.lv].p+' mata ⭐';$('qnext').style.display='inline-block';sfx.ok();conf(70,innerWidth/2,innerHeight/2);hud()}
+ else{G.triedCurrent=true;G.wrongAttempts++;e.classList.add('bad');e.disabled=true;$('qf').className='bad';$('qf').textContent='Belum tepat! Cuba lagi! 💡 Petunjuk: '+Q[G.lv][cur][4];sfx.bad()}}
+$('qnext').onclick=()=>{$('pop').classList.remove('on');const n=G.done[G.lv].filter(Boolean).length;
+ if(n<7){st='play';$('dp').classList.add('on');return}
+ if(G.lv<2){sfx.lv();conf(160);const k=G.lv+1;trans('🎉','TAHNIAH! LEVEL '+k+' SELESAI!','Level '+(k+1)+' telah dibuka!<br><b>'+LV[k].t+'</b><br>'+LV[k].o+'<br>Setiap jawapan betul = '+LV[k].p+' markah.','TERUSKAN KE LEVEL '+(k+1),()=>loadLevel(k))}
+ else win()};
+function getLB(){try{return JSON.parse(localStorage.getItem('rbtWiraLB'))||[]}catch(e){return[]}}
+const srt=a=>a.sort((x,y)=>y.s-x.s||x.t-y.t);
+function win(){
+ $('reportResult').value = JSON.stringify({
+   id:G.reportId, name:G.name, character:G.ch, score:G.score,
+   seconds:Math.floor(G.t), firstTry:G.firstTry, wrongAttempts:G.wrongAttempts
+ });
+ st='win';sfx.win();conf(250);clearInterval(window.wi);window.wi=setInterval(()=>st=='win'&&conf(18),700);
+ if(!G.saved){G.saved=1;const a=getLB();a.push({n:G.name,c:G.ch,s:G.score,t:Math.floor(G.t)});try{localStorage.setItem('rbtWiraLB',JSON.stringify(srt(a).slice(0,50)))}catch(e){}}
+ $('wS').innerHTML='👤 <b>'+G.name.replace(/</g,'&lt;')+'</b> ('+(G.ch=='l'?'Murid Lelaki':'Murid Perempuan')+')<br>⭐ Markah: <b>'+G.score+' / 420</b><br>⏱ Masa: <b>'+fmt(G.t)+'</b><br>✅ Cabaran siap: <b>21 / 21</b><br>Kamu hebat! Terus amalkan keselamatan di bengkel dan di mana sahaja! 🌟';scr('win')}
+function showLB(from){backTo=from;const a=srt(getLB()).slice(0,10),m=['🥇','🥈','🥉'];
+ $('lbt').innerHTML='<tr><th>#</th><th>Nama</th><th>Watak</th><th>Markah</th><th>Masa</th></tr>'+(a.length?a.map((r,i)=>'<tr><td>'+(m[i]||i+1)+'</td><td>'+r.n.replace(/</g,'&lt;')+'</td><td>'+(r.c=='l'?'👦':'👧')+'</td><td>'+r.s+'</td><td>'+fmt(r.t)+'</td></tr>').join(''):'<tr><td colspan=5>Belum ada rekod. Jadilah yang pertama!</td></tr>');scr('lb')}
+function menu(){st='menu';scr('menu')}
+/* butang */
+$('bStart').onclick=()=>{au();scr('setup')};$('bLB').onclick=()=>{au();showLB('menu')};$('bHelp').onclick=()=>{helpFrom='menu';$('bGo').textContent='⬅ Kembali';scr('help')};
+$('bBack1').onclick=menu;$('bNext').onclick=()=>{helpFrom='setup';$('bGo').textContent='MULAKAN LEVEL 1';scr('help')};
+$('bGo').onclick=()=>helpFrom=='menu'?menu():begin();
+$('bLBback').onclick=()=>backTo=='win'?scr('win'):menu();
+$('c1').onclick=()=>{CH='l';$('c1').classList.add('sel');$('c2').classList.remove('sel')};$('c2').onclick=()=>{CH='p';$('c2').classList.add('sel');$('c1').classList.remove('sel')};
+$('wL').onclick=()=>showLB('win');$('wR').onclick=begin;$('wM').onclick=menu;
+$('bp').onclick=()=>{if(st=='play'||st=='quiz'){prevSt=st;st='pause';$('ps').classList.add('on')}};
+$('pR').onclick=()=>{st=prevSt;$('ps').classList.remove('on')};
+$('pM').onclick=()=>{$('ps').classList.remove('on');menu()};
+/* kawalan */
+const KM={ArrowUp:'u',w:'u',W:'u',ArrowDown:'d',s:'d',S:'d',ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r'};
+addEventListener('keydown',e=>{const k=KM[e.key];if(k&&st=='play'){K[k]=1;e.preventDefault()}});
+addEventListener('keyup',e=>{const k=KM[e.key];if(k)K[k]=0});
+document.querySelectorAll('#dp button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();K[k]=1;au()});['pointerup','pointercancel','pointerleave'].forEach(n=>b.addEventListener(n,e=>{e.preventDefault();K[k]=0}));b.addEventListener('contextmenu',e=>e.preventDefault())});
+addEventListener('blur',()=>K={u:0,d:0,l:0,r:0});
+document.addEventListener('touchmove',e=>{if(!e.target.closest('.scr'))e.preventDefault()},{passive:false});
+
+/* ---------- gelung utama ---------- */
+const p1=$('p1').getContext('2d'),p2=$('p2').getContext('2d');let last=0;
+function loop(ts){requestAnimationFrame(loop);const dt=Math.min((ts-last)/1000||0,.05);last=ts;T+=dt;
+ if(st=='play'){move(dt);checkSym()}
+ if(st=='play'||st=='quiz'){G.t+=dt;hud()}
+ if(st!='menu'&&obs.length)world(T);
+ if($('setup').classList.contains('on')){[[p1,'l'],[p2,'p']].forEach(a=>{a[0].setTransform(1,0,0,1,0,0);a[0].clearRect(0,0,100,120);a[0].setTransform(2.2,0,0,2.2,0,0);chr(a[0],22.5,52,a[1],T,0,1)})}
+ fxDraw()}
+resize();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
